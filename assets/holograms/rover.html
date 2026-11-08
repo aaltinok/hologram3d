@@ -1,0 +1,120 @@
+<!DOCTYPE html><!-- blueprint: mavi şema teması --><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"><title>Mars Rover 3D Hologram</title><style>
+:root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+html,body{height:100%;margin:0;overflow:hidden;font-family:system-ui,sans-serif;color:#d6ebff}html{background:#04204f}body{background:radial-gradient(ellipse at 50% 34%,#1b5fc9 0%,#0b3a8f 45%,#04204f 82%)}
+canvas{display:block;width:100%;height:100%;touch-action:none}
+.scan{position:fixed;inset:0;pointer-events:none;background:linear-gradient(rgba(255,255,255,.11) 1px,transparent 1px) 0 0/100px 100px,linear-gradient(90deg,rgba(255,255,255,.11) 1px,transparent 1px) 0 0/100px 100px,linear-gradient(rgba(255,255,255,.05) 1px,transparent 1px) 0 0/20px 20px,linear-gradient(90deg,rgba(255,255,255,.05) 1px,transparent 1px) 0 0/20px 20px;box-shadow:inset 0 0 0 6px rgba(4,32,79,.92),inset 0 0 0 7px rgba(255,255,255,.55)}
+.top{position:fixed;top:calc(env(safe-area-inset-top,0px) + 14px);width:100%;text-align:center;letter-spacing:.24em;font-size:12px;text-shadow:0 0 8px #a9d6ff;pointer-events:none}
+.top b{display:block;font-size:30px;letter-spacing:.1em;margin-top:6px}
+.ui{position:fixed;left:0;right:0;bottom:calc(env(safe-area-inset-bottom,0px) + 6px);display:flex;flex-direction:column;gap:8px;padding:0 12px}
+.card{font-size:12.5px;line-height:1.45;color:#e8f3ff;background:rgba(5,32,82,.74);border:1px solid rgba(160,208,255,.5);border-radius:12px;padding:10px 12px;max-height:25vh;overflow:auto;backdrop-filter:blur(6px);box-shadow:0 0 18px rgba(160,208,255,.25)}
+.card b{display:block;font-size:15px;color:#fff;letter-spacing:.06em;margin-bottom:4px;text-shadow:0 0 8px #a9d6ff}
+.chips{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;padding-bottom:2px}.chips button{flex:none;padding:7px 11px;font-size:12px}
+button{background:rgba(160,208,255,.08);color:#d6ebff;border:1px solid #9ccfff;border-radius:8px;padding:9px 12px;font-size:12px;letter-spacing:.08em;box-shadow:0 0 10px rgba(160,208,255,.4)}
+button.on{background:rgba(160,208,255,.38);color:#fff}
+.bar{display:flex;gap:8px;justify-content:center}
+.ft{text-align:center;font-size:13px;letter-spacing:.3em;color:#e8f3ff;text-shadow:0 0 6px #a9d6ff,0 0 16px #9ccfff;padding-top:2px}
+@keyframes fl{0%,100%{opacity:.97}8%{opacity:.7}10%{opacity:1}52%{opacity:.6}54%{opacity:1}}
+</style></head><body><canvas id="c"></canvas><div class="scan"></div>
+<div class="top">BLUEPRINT 3D · MARS ROVER<b id="deg">0°</b></div>
+<div class="ui"><div class="card" id="card"></div><div class="chips" id="chips"></div><div class="bar"><button id="bR">⏸ DÖNÜŞ</button><button id="bM">⏸ GEZİN</button><button id="bF">◧ TEL KAFES</button></div><div class="ft">MERAL Robotik Kulübü</div></div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+const T=THREE,PI=Math.PI,cv=document.getElementById('c');
+const R=new T.WebGLRenderer({canvas:cv,antialias:true,alpha:true});R.setPixelRatio(Math.min(devicePixelRatio,2));
+const S=new T.Scene(),cam=new T.PerspectiveCamera(50,1,.1,500);
+const pivot=new T.Group(),robot=new T.Group();pivot.add(robot);S.add(pivot);
+const fills=[],AD=T.AdditiveBlending,G={};let cur='',par=robot;
+const CY=0x66f0ff,AMB=0xffc933,WH=0xdfffff,GRN=0x3dffa0,ORG=0xff8a3a,BLU=0x2aa8ff,RED=0xff4d6d;
+const bp=c=>{const k=new T.Color(c),l=.299*k.r+.587*k.g+.114*k.b;return new T.Color().setHSL(.6,.85,.58+.3*l)};
+function part(g,c,x=0,y=0,z=0,o={}){c=bp(c);const q=new T.Group();
+ const m=new T.Mesh(g,new T.MeshBasicMaterial({color:c,transparent:true,opacity:(o.f??.2)*.8,blending:AD,depthWrite:false,side:T.DoubleSide}));
+ const l=new T.LineSegments(new T.EdgesGeometry(g,28),new T.LineBasicMaterial({color:c,transparent:true,opacity:.95,blending:AD}));
+ q.add(m,l);q.position.set(x,y,z);if(o.r)q.rotation.set(...o.r);(o.p||par).add(q);fills.push(m);m.userData.f=m.material.opacity;l.userData.c=l.material.color.clone();(G[cur]=G[cur]||[]).push({m,l});return q}
+const B=(a,b,c)=>new T.BoxGeometry(a,b,c),C=(r,h,s=24)=>new T.CylinderGeometry(r,r,h,s);
+const J=(p,x,y,z)=>{const g=new T.Group();g.position.set(x,y,z);p.add(g);return g};
+const PR=15,H=18,LY=6.5,FIT=13,CMIN=36;
+
+function link(p,a,b,w,c){const dz=b[0]-a[0],dy=b[1]-a[1],l=Math.hypot(dz,dy);return part(B(w,w,l),c,0,(a[1]+b[1])/2,(a[0]+b[0])/2,{p,r:[Math.atan2(-dy,dz),0,0],f:.3})}
+function wheelAt(p){const sp=J(p,0,0,0);
+ part(C(1.9,1.6,28),CY,0,0,0,{p:sp,r:[0,0,PI/2],f:.15});part(C(.7,1.9,16),AMB,0,0,0,{p:sp,r:[0,0,PI/2],f:.4});
+ for(let k=0;k<10;k++){const a=k/10*2*PI;part(B(1.7,.4,.5),CY,0,Math.cos(a)*2.05,Math.sin(a)*2.05,{p:sp,r:[a,0,0],f:.4})}
+ return sp}
+const rks=[],bgs=[],sts=[],spins=[];let mastG,dishG;
+[-6.2,6.2].forEach((sx,si)=>{const sd=J(robot,sx,0,0),rk=J(sd,0,6,1.5);rks.push(rk);
+ cur='rocker';link(rk,[0,0],[7,-4.2],.8,CY);link(rk,[0,0],[-5,-1.8],.8,CY);part(C(.7,1.2,16),WH,0,0,0,{p:rk,r:[0,0,PI/2],f:.4});
+ cur='diff';part(B(.4,1.8,.4),WH,sx>0?-.7:.7,.9,0,{p:rk,f:.5});
+ const stF=J(rk,0,-4.2,7);sts.push({g:stF,s:1});
+ cur='motors';part(B(1.2,1,1.2),AMB,0,1.5,0,{p:stF,f:.35});
+ cur='wheels';spins.push(wheelAt(stF));
+ const bg=J(rk,0,-1.8,-5);bgs.push(bg);
+ cur='bogie';link(bg,[0,0],[2.5,-2.4],.7,CY);link(bg,[0,0],[-4.5,-2.4],.7,CY);part(C(.6,1.1,16),WH,0,0,0,{p:bg,r:[0,0,PI/2],f:.4});
+ cur='wheels';spins.push(wheelAt(J(bg,0,-2.4,2.5)));
+ const stB=J(bg,0,-2.4,-4.5);sts.push({g:stB,s:-1});
+ cur='motors';part(B(1.2,1,1.2),AMB,0,1.5,0,{p:stB,f:.35});
+ cur='wheels';spins.push(wheelAt(stB));
+});
+cur='diff';
+part(C(.35,12.4,12),WH,0,6,1.5,{r:[0,0,PI/2],f:.5});part(B(.8,1.4,.8),WH,0,6.8,1.5,{f:.5});
+cur='body';
+part(B(9,3.2,12),CY,0,8,0,{f:.25});part(B(9.4,.35,12.4),CY,0,9.75,0,{f:.3});
+[-1,1].forEach(s=>part(B(1.2,.9,.4),WH,s*2,8.2,6.1,{f:.7}));part(B(2,1.4,2),AMB,2.4,8,-2,{f:.3});
+cur='solar';
+[[-1,-1],[1,-1],[-1,1],[1,1]].forEach(s=>part(C(.2,1,8),WH,s[0]*4.5,10.4,s[1]*4.4,{f:.5}));
+for(let i=0;i<3;i++)for(let j=0;j<2;j++)part(B(3.1,.18,4.6),0x3d7cff,-3.3+i*3.3,11,-2.5+j*5,{f:.45});
+cur='mast';
+mastG=J(robot,-3,9.93,5.3);
+part(C(.35,6.5,12),WH,0,3.25,0,{p:mastG,f:.5});part(B(3.4,1.2,1.5),CY,0,7.1,0,{p:mastG,f:.4});
+[-1,1].forEach(s=>part(C(.4,.9,16),WH,s*.9,7.1,1.1,{p:mastG,r:[PI/2,0,0],f:.6}));
+cur='antenna';
+dishG=J(robot,3.2,9.93,-4.2);
+part(C(.25,2.6,8),WH,0,1.3,0,{p:dishG,f:.5});
+const dg2=J(dishG,0,3,0);dg2.rotation.x=-.6;
+part(new T.SphereGeometry(2.1,24,10,0,2*PI,PI/2,PI/2),CY,0,.9,0,{p:dg2,f:.28});part(C(.08,2,6),WH,0,1.9,0,{p:dg2,f:.7});
+
+// Sahne
+const gr=new T.GridHelper(PR*4,40,0x9ccfff,0x3a78d8);gr.material.transparent=true;gr.material.opacity=.35;S.add(gr);
+[1,1.25,1.5].forEach((k,i)=>{const m=new T.Mesh(new T.RingGeometry(PR*k,PR*k+PR*.008,128),new T.MeshBasicMaterial({color:0x9ccfff,transparent:true,opacity:.7-i*.2,blending:AD,side:T.DoubleSide}));m.rotation.x=-PI/2;S.add(m)});
+const tk=[];for(let i=0;i<72;i++){const a=i/72*2*PI,l=(i%6?.035:.08)*PR,r0=PR*1.32;tk.push(Math.cos(a)*r0,0,Math.sin(a)*r0,Math.cos(a)*(r0+l),0,Math.sin(a)*(r0+l))}
+const tg=new T.BufferGeometry();tg.setAttribute('position',new T.Float32BufferAttribute(tk,3));S.add(new T.LineSegments(tg,new T.LineBasicMaterial({color:0xd6ebff,transparent:true,opacity:.6})));
+const mk=new T.Mesh(new T.ConeGeometry(PR*.035,PR*.07,3),new T.MeshBasicMaterial({color:0xffffff,blending:AD}));mk.rotation.x=PI;S.add(mk);
+const pd=new T.Mesh(C(PR,.3,96),new T.MeshBasicMaterial({color:0x9ccfff,transparent:true,opacity:.08,blending:AD,depthWrite:false}));pd.position.y=-.2;S.add(pd);
+const pe=new T.LineSegments(new T.EdgesGeometry(C(PR,.3,96),20),new T.LineBasicMaterial({color:0xd6ebff,transparent:true,opacity:.8}));pe.position.y=-.2;S.add(pe);
+const og=new T.Group(),oM=new T.MeshBasicMaterial({color:0x9ccfff,transparent:true,opacity:.6,blending:AD,side:T.DoubleSide});for(let i=0;i<20;i++)og.add(new T.Mesh(new T.RingGeometry(PR*1.75,PR*1.75+PR*.014,10,1,i/20*2*PI,2*PI/20*.6),oM));og.rotation.x=-PI/2;S.add(og);
+const beam=new T.Mesh(new T.CylinderGeometry(PR*.9,PR*1.05,H,64,1,true),new T.MeshBasicMaterial({color:0x9ccfff,transparent:true,opacity:.04,blending:AD,side:T.DoubleSide,depthWrite:false}));beam.position.y=H/2;S.add(beam);
+const sr=new T.Mesh(new T.TorusGeometry(PR*.9,.07,8,128),new T.MeshBasicMaterial({color:0xe8f3ff,blending:AD}));sr.rotation.x=PI/2;S.add(sr);
+const N=240,pp=new Float32Array(N*3);for(let i=0;i<N;i++){const a=Math.random()*2*PI,r=Math.random()*PR*1.1;pp.set([Math.cos(a)*r,Math.random()*H,Math.sin(a)*r],i*3)}
+const pg=new T.BufferGeometry();pg.setAttribute('position',new T.BufferAttribute(pp,3));S.add(new T.Points(pg,new T.PointsMaterial({color:0xd6ebff,size:PR*.012+.1,transparent:true,opacity:.8,blending:AD})));
+// Etkileşim
+let auto=true,mov=true,drag=false,lx=0,ly=0,wire=false,tgt=null,sk=null,mv=1;pivot.rotation.x=0.2;
+cv.onpointerdown=e=>{tgt=null;drag=true;lx=e.clientX;ly=e.clientY;cv.setPointerCapture(e.pointerId)};
+cv.onpointerup=cv.onpointercancel=()=>drag=false;
+cv.onpointermove=e=>{if(!drag)return;pivot.rotation.y+=(e.clientX-lx)*.01;pivot.rotation.x=Math.max(-.3,Math.min(.9,pivot.rotation.x+(e.clientY-ly)*.005));lx=e.clientX;ly=e.clientY};
+bR.onclick=()=>{auto=!auto;if(auto)tgt=null;bR.textContent=auto?'⏸ DÖNÜŞ':'▶ DÖNÜŞ'};
+bM.onclick=()=>{mov=!mov;bM.textContent=(mov?'⏸ ':'▶ ')+'GEZİN'};
+bF.onclick=()=>{wire=!wire;fills.forEach(m=>m.visible=!wire);bF.textContent=wire?'◨ DOLU':'◧ TEL KAFES'};
+const INFO={"body": {"n": "Gövde (Sıcak Elektronik Kutusu)", "y": 0.6, "x": 0.45, "t": "Bilgisayar, batarya ve iletişim cihazlarını toz ve gece soğuğundan korur. Rocker-bogie sistemi sayesinde gövde, engellerde iki yanın ortalama yüksekliğiyle hareket eder."}, "solar": {"n": "Güneş Paneli", "y": 0.4, "x": 0.6, "t": "Enerji kaynağı. Sojourner, Spirit ve Opportunity gibi gezginler güneş enerjisi kullandı; Curiosity ve Perseverance ise nükleer güç ünitesi taşır. Burada güneş paneli örnek alınmıştır."}, "mast": {"n": "Direk ve Kamera Başı", "y": 0.3, "x": 0.3, "t": "Yüksekteki stereo kameralar çevreyi görüntüler, yolu ve hedefleri seçmeye yarar. Direk kendi ekseninde dönerek etrafı tarar."}, "antenna": {"n": "Yüksek Kazançlı Anten", "y": 2.7, "x": 0.4, "t": "Dünya ile veri ve komut alışverişi için yönlendirilebilir çanak anten."}, "rocker": {"n": "Rocker (Ana Salıncak)", "y": 1.4, "x": 0.2, "t": "Her yanda uzun ana kol: önde ön tekerleği, arkada bogie'yi taşır. Bir yan yükselirken diğeri alçalır; böylece altı tekerlek zeminle temasını korur."}, "bogie": {"n": "Bogie (Küçük Salıncak)", "y": 1.4, "x": 0.2, "t": "Orta ve arka tekerleği taşıyan kısa kol; rocker'ın ucunda pivotlanır ve tekerlek yükünü dengeli dağıtır."}, "diff": {"n": "Diferansiyel Kol", "y": 1, "x": 0.35, "t": "İki rocker'ı birbirine bağlar: biri yükselirken diğeri alçalır ve gövdenin eğimi iki yanın ortalaması olur. Yay gerektirmeyen sade bir mekanizmadır."}, "wheels": {"n": "Tekerlekler (6)", "y": 1.4, "x": 0.15, "t": "Altı tekerleğin her biri ayrı motorla sürülür. Yüzeydeki çıkıntılar (cleat) gevşek toprakta tutunmayı artırır."}, "motors": {"n": "Direksiyon Motorları (4)", "y": 0.9, "x": 0.3, "t": "Ön ve arka köşe tekerlekleri döndürür; böylece robot yerinde dönebilir (point turn) ve daha dar manevra yapar."}};
+function hl(k){Object.keys(G).forEach(g=>G[g].forEach(o=>{const on=!k||g===k;o.m.material.opacity=k?(on?Math.min(.75,o.m.userData.f*2.2+.2):o.m.userData.f*.2):o.m.userData.f;o.l.material.color.copy(k&&on?new T.Color(0xffffff):o.l.userData.c);o.l.material.opacity=k&&!on?.2:.95}))}
+function pick(k){sk=k;hl(k);document.querySelectorAll('#chips button').forEach(b=>b.classList.toggle('on',b.dataset.k===(k||'')));
+ if(!k){card.innerHTML='Bir parça seçerek tanıtımını oku. Robot o parçaya döner.';tgt=null;auto=true;mov=true;bR.textContent='⏸ DÖNÜŞ';bM.textContent='⏸ GEZİN';return}
+ const d=INFO[k];card.innerHTML='<b>'+d.n+'</b>'+d.t;tgt={y:d.y,x:d.x};auto=false;mov=false;bR.textContent='▶ DÖNÜŞ';bM.textContent='▶ GEZİN'}
+chips.innerHTML='<button data-k="" class="on">TÜMÜ</button>'+Object.keys(INFO).map(k=>'<button data-k="'+k+'">'+INFO[k].n.split(' (')[0]+'</button>').join('');
+chips.onclick=e=>{const b=e.target.closest('button');if(b)pick(b.dataset.k||null)};pick(null);
+function rs(){const w=innerWidth,h=innerHeight,a=w/h;R.setSize(w,h,false);cam.aspect=a;const d=Math.max(CMIN,FIT/(Math.tan(25*PI/180)*a)*1.05);cam.position.set(0,d*.4,d);cam.lookAt(0,LY,0);cam.setViewOffset(w,h,0,h*(a<1?.14:.07),w,h)}
+addEventListener('resize',rs);rs();
+const dg=document.getElementById('deg');let t0=performance.now();
+(function loop(t){const dt=Math.min((t-t0)/1000,.05);t0=t;
+ if(tgt){const d=((tgt.y-pivot.rotation.y+PI)%(2*PI)+2*PI)%(2*PI)-PI;pivot.rotation.y+=d*Math.min(1,dt*4);pivot.rotation.x+=(tgt.x-pivot.rotation.x)*Math.min(1,dt*4)}else if(auto&&!drag)pivot.rotation.y+=dt*.5;
+ mv+=((mov?1:0)-mv)*Math.min(1,dt*3);
+ 
+ {const a=.25*Math.sin(t/1100)*mv;rks[0].rotation.x=a;rks[1].rotation.x=-a;bgs[0].rotation.x=-a*.7;bgs[1].rotation.x=a*.7;
+ spins.forEach(w=>w.rotation.x+=dt*3*mv);
+ sts.forEach(s=>s.g.rotation.y=s.s*.3*Math.sin(t/1800)*mv);
+ mastG.rotation.y=.9*Math.sin(t/2200)*mv;dishG.rotation.y=.6*Math.sin(t/2600)*mv}
+
+ og.rotation.z+=dt*.12;if(sk&&G[sk])G[sk].forEach(o=>o.l.material.opacity=.65+.35*Math.sin(t/160));
+ sr.position.y=(t/1000%3)/3*H;
+ const dd=(((pivot.rotation.y*180/PI)%360)+360)%360;dg.textContent=Math.round(dd)+'°';
+ const a=-pivot.rotation.y;mk.position.set(Math.cos(a)*PR*1.42,PR*.04,Math.sin(a)*PR*1.42);
+ const p=pg.attributes.position;for(let i=0;i<N;i++){let y=p.getY(i)+dt*H*.06;if(y>H)y=0;p.setY(i,y)}p.needsUpdate=true;
+ R.render(S,cam);requestAnimationFrame(loop)})(t0);
+</script></body></html>
