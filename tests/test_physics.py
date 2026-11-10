@@ -77,3 +77,20 @@ def test_tipover():
     t = X.tipover_angles(28, 35, 14)
     assert abs(t["lateral"] - 45.0) < 1e-9
     assert t["longitudinal"] > t["lateral"]
+
+
+def test_rover_steering_geometry():
+    st = X.rover_steering(np.inf, 17, 16, 28)
+    assert all(a == 0 for a in st["angle_deg"]) and all(v == 1 for v in st["speed"])
+    L = X.rover_steering(60, 17, 16, 28)                     # sol dönüş (R>0)
+    a, v = L["angle_deg"], L["speed"]
+    assert a[0] < 0 and a[1] < 0 and a[4] > 0 and a[5] > 0   # ön tekerlekler sola, arka tekerlekler sağa
+    assert abs(a[0]) > abs(a[1])                             # iç (sol ön) tekerlek daha çok döner
+    assert a[2] == 0 and a[3] == 0                           # orta tekerlekler düz
+    assert abs(max(v) - 1.0) < 1e-12 and max(v) in (v[1], v[5])   # en hızlı: dış köşe tekerlekler
+    assert 0 < v[2] < v[3] < 1.0                              # dış orta tekerlek, iç orta tekerlekten hızlı
+    R = X.rover_steering(-60, 17, 16, 28)                    # sağ dönüş simetrik
+    assert abs(R["angle_deg"][1] + L["angle_deg"][0]) < 1e-9
+    P = X.rover_steering(0.0, 17, 16, 28)                    # yerinde dönüş: sol tekerlekler geri, sağ ileri
+    assert P["speed"][2] < 0 < P["speed"][3]
+    assert all(abs(x) <= 90 for x in P["angle_deg"])

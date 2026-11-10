@@ -13,6 +13,7 @@ from robot_lab import kinematics as K
 from robot_lab import physics as X
 from robot_lab import plots as P
 from robot_lab.data import (COMPARE_ROWS, RADAR_AXES, RADAR_SCORES, ROBOTS, parts_df)
+from robot_lab.guide_ui import render_guide
 from robot_lab.ui import footer, header, holo, inject_css, show_df, show_fig
 
 st.set_page_config(page_title="MERAL · 3D Robot Hologram Laboratuvarı", page_icon="🤖", layout="wide",
@@ -74,6 +75,7 @@ if view == NAV[0]:
 # ----------------------------------------------------------------------------- 2) Robot araba
 if view == NAV[1]:
     robot_panel("araba")
+    render_guide("araba", HEIGHT)
     st.divider()
     st.header("🔬 Bilimsel analiz")
     t1, t2 = st.tabs(["Diferansiyel sürüş kinematiği", "Çizgi izleme (PD kontrol) simülasyonu"])
@@ -132,6 +134,7 @@ if view == NAV[1]:
 # ----------------------------------------------------------------------------- 3) Robot kol
 if view == NAV[2]:
     robot_panel("kol")
+    render_guide("kol", HEIGHT)
     st.divider()
     st.header("🔬 Bilimsel analiz")
     st.markdown("Kolun düzlemdeki (yan görünüş) **3R modeli**: q₁ yataydan ölçülür, q₂ ve q₃ göreli açılardır. "
@@ -186,6 +189,7 @@ if view == NAV[2]:
 # ----------------------------------------------------------------------------- 4) Altı bacaklı
 if view == NAV[3]:
     robot_panel("hexapod")
+    render_guide("hexapod", HEIGHT)
     st.divider()
     st.header("🔬 Bilimsel analiz: yürüyüş (gait) analizi")
     st.markdown("Her bacak bir döngüde **destek (yerde)** ve **salınım (havada)** fazından geçer. "
@@ -223,6 +227,7 @@ if view == NAV[3]:
 # ----------------------------------------------------------------------------- 5) Quadcopter
 if view == NAV[4]:
     robot_panel("quad")
+    render_guide("quad", HEIGHT)
     st.divider()
     st.header("🔬 Bilimsel analiz")
     t1, t2, t3 = st.tabs(["İtki ve uçuş süresi", "Yatış (roll) PD kontrolü", "Motor karıştırıcı (mixer)"])
@@ -305,6 +310,7 @@ if view == NAV[4]:
 # ----------------------------------------------------------------------------- 6) Paletli tank
 if view == NAV[5]:
     robot_panel("tank")
+    render_guide("tank", HEIGHT)
     st.divider()
     st.header("🔬 Bilimsel analiz")
     t1, t2 = st.tabs(["Paletli sürüş kinematiği", "Kuvvet ve tork analizi"])
@@ -369,6 +375,7 @@ if view == NAV[5]:
 # ----------------------------------------------------------------------------- 7) Mars rover
 if view == NAV[6]:
     robot_panel("rover")
+    render_guide("rover", HEIGHT)
     st.divider()
     st.header("🔬 Bilimsel analiz")
     t1, t2 = st.tabs(["Engel aşma (rocker-bogie)", "Devrilme ve kayma kararlılığı"])
@@ -450,7 +457,7 @@ temel robotik hesaplamaları gösterir.
 2. Hologramı sürükleyerek çevirin, parça düğmeleriyle parçaları tanıyın.
 3. Sekmenin altındaki *Bilimsel analiz* bölümünde kaydırıcılarla parametreleri değiştirin.
 
-**Dosya yapısı:** `app.py` (arayüz) · `robot_lab/kinematics.py` ve `robot_lab/physics.py` (hesaplamalar) · `robot_lab/plots.py` (grafikler) ·
+**Dosya yapısı:** `app.py` (arayüz) · `robot_lab/kinematics.py` ve `robot_lab/physics.py` (hesaplamalar) · `robot_lab/guides.py` (yapım rehberleri) · `robot_lab/diagrams.py` (kablolama şemaları) · `robot_lab/plots.py` (grafikler) ·
 `robot_lab/data.py` (parça verileri) · `assets/holograms/*.html` (three.js hologramları) · `tests/` (birim testleri).
 
 **Önemli notlar**

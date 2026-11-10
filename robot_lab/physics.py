@@ -175,3 +175,30 @@ def tipover_angles(track_cm: float, wheelbase_cm: float, cg_height_cm: float) ->
     """Statik devrilme eşikleri (derece): yanal = atan((iz/2)/h), boyuna = atan((dingil mesafesi/2)/h)."""
     return {"lateral": float(np.rad2deg(np.arctan((track_cm / 2.0) / cg_height_cm))),
             "longitudinal": float(np.rad2deg(np.arctan((wheelbase_cm / 2.0) / cg_height_cm)))}
+
+
+def rover_steering(radius_cm: float, front_d_cm: float, rear_d_cm: float, track_cm: float) -> dict:
+    """6 tekerlekli rover için dört köşe tekerlek direksiyon açısı ve altı tekerleğin göreli hızı.
+
+    Koordinatlar: x sağa +, y ileri +. Dönüş merkezi (ICC) = (−R, 0); R işaretlidir: R>0 sol, R<0 sağ dönüş,
+    R=inf düz gidiş, R=0 yerinde dönüş. Tekerlek konumları: ön/arka köşe (±T/2, +Df / −Dr), orta (±T/2, 0).
+    Direksiyon açısı δ = atan2(−y, x+R) (derece, + sağa), hız ∝ ICC'ye uzaklık (en yüksek hız = 1).
+    """
+    names = ["Ön sol", "Ön sağ", "Orta sol", "Orta sağ", "Arka sol", "Arka sağ"]
+    pos = [(-track_cm / 2, front_d_cm), (track_cm / 2, front_d_cm), (-track_cm / 2, 0.0),
+           (track_cm / 2, 0.0), (-track_cm / 2, -rear_d_cm), (track_cm / 2, -rear_d_cm)]
+    ang, spd = [], []
+    om = 1.0 if radius_cm >= 0 else -1.0          # dönüş yönü: + sol (saat yönünün tersi), − sağ
+    for x, y in pos:
+        if np.isinf(radius_cm):
+            ang.append(0.0); spd.append(1.0); continue
+        vx, vy = om * (-y), om * (x + radius_cm)  # tekerlek hız vektörü ∝ ω × r
+        v = float(np.hypot(vx, vy))
+        d = float(np.degrees(np.arctan2(vx, vy))) if v > 1e-12 else 0.0
+        if d > 90.0:                              # tekerlek geri gidiyor: açıyı 180° çevir, hızı eksi say
+            d, v = d - 180.0, -v
+        elif d < -90.0:
+            d, v = d + 180.0, -v
+        ang.append(d); spd.append(v)
+    vmax = max(abs(v) for v in spd) or 1.0
+    return {"names": names, "angle_deg": ang, "speed": [v / vmax for v in spd]}

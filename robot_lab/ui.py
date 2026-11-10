@@ -1,6 +1,7 @@
 """Streamlit arayüz yardımcıları: tema CSS'i, hologram gömme, sürüm uyumlu çizim fonksiyonları."""
 from __future__ import annotations
 
+import json
 from pathlib import Path
 
 import streamlit as st
@@ -25,6 +26,7 @@ h1,h2,h3{letter-spacing:.04em}
 [data-testid="stMetric"]{background:rgba(0,229,255,.06);border:1px solid rgba(0,229,255,.3);border-radius:8px;padding:8px 12px}
 [data-testid="stMetricValue"]{color:#6ff}
 .stTabs [data-baseweb="tab"]{letter-spacing:.04em}
+.chip{display:inline-block;border:1px solid rgba(126,190,255,.6);border-radius:999px;padding:2px 11px;margin:3px 4px 3px 0;font-size:.82rem;background:rgba(126,190,255,.10);color:#d6ebff}
 .formula{border-left:3px solid #00e5ff;padding:2px 12px;color:#bfeaf5;background:rgba(0,229,255,.05)}
 .foot{text-align:center;letter-spacing:.3em;color:#bff;text-shadow:0 0 6px #0ff,0 0 14px #0ee;margin-top:28px;padding:14px 0;
  border-top:1px solid rgba(0,229,255,.25)}
@@ -71,3 +73,17 @@ def show_df(df) -> None:
         st.dataframe(df, hide_index=True, width="stretch")
     except TypeError:
         st.dataframe(df, hide_index=True, use_container_width=True)
+
+
+def holo_build(key: str, steps: list, idx: int = 0, autoplay: bool = False, explode: float = 0.0,
+               height: int = 600, title: str = "") -> None:
+    """Hologramı montaj modunda gömer: parçalar adım adım belirir, güncel adımın parçaları vurgulanır."""
+    cfg = {"compact": True, "title": title, "steps": steps, "idx": idx, "autoplay": autoplay,
+           "explode": explode, "interval": 3600}
+    if key == "araba":
+        cfg["fixY"] = 0
+    script = "<script>window.BUILD=" + json.dumps(cfg, ensure_ascii=False) + ";</script>"
+    marker = '<script src="https://cdnjs'
+    html = load_holo(key)
+    assert marker in html
+    components.html(html.replace(marker, script + marker, 1), height=height, scrolling=False)

@@ -6,19 +6,19 @@ import plotly.graph_objects as go
 
 from . import kinematics as K
 
-CYAN, AMB, GRN, RED, VIO = "#00e5ff", "#ffc933", "#3dffa0", "#ff4d6d", "#a78bfa"
+CYAN, AMB, GRN, RED, VIO = "#8fd0ff", "#ffd166", "#7cf5c1", "#ff8aa0", "#b7a6ff"
 
 
 def _style(fig: go.Figure, title: str | None = None, h: int = 420, equal: bool = False) -> go.Figure:
     fig.update_layout(
-        template="plotly_dark", paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(3,22,33,.65)",
+        template="plotly_dark", paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(10,45,110,.55)",
         font=dict(family="monospace", color="#cdf"), height=h,
         title=dict(text=title, font=dict(size=14)) if title else None,
         margin=dict(l=10, r=10, t=44 if title else 12, b=10),
         legend=dict(orientation="h", y=-0.18),
     )
-    fig.update_xaxes(gridcolor="#0f3a4d", zerolinecolor="#1b5a73")
-    fig.update_yaxes(gridcolor="#0f3a4d", zerolinecolor="#1b5a73")
+    fig.update_xaxes(gridcolor="#2a5aa8", zerolinecolor="#4a7fcf")
+    fig.update_yaxes(gridcolor="#2a5aa8", zerolinecolor="#4a7fcf")
     if equal:
         fig.update_yaxes(scaleanchor="x", scaleratio=1)
     return fig
@@ -49,7 +49,7 @@ def fig_line_follow(res: dict, amp: float, wavelength: float) -> go.Figure:
 
 def fig_cte(res: dict) -> go.Figure:
     f = go.Figure(go.Scatter(x=res["t"], y=res["cte"], line=dict(color=AMB, width=2), name="Yanal hata"))
-    f.add_hline(y=0, line_color="#1b5a73")
+    f.add_hline(y=0, line_color="#4a7fcf")
     f.update_xaxes(title="Zaman (s)"); f.update_yaxes(title="Yanal hata (cm)")
     return _style(f, "Çizgiden yanal sapma", 300)
 
@@ -115,8 +115,8 @@ def fig_radar(axes, scores: dict) -> go.Figure:
     for (name, vals), c in zip(scores.items(), cols):
         f.add_trace(go.Scatterpolar(r=list(vals) + [vals[0]], theta=list(axes) + [axes[0]], fill="toself",
                                     name=name, line=dict(color=c), opacity=0.55))
-    f.update_layout(polar=dict(bgcolor="rgba(3,22,33,.65)", radialaxis=dict(range=[0, 10], gridcolor="#0f3a4d"),
-                               angularaxis=dict(gridcolor="#0f3a4d")))
+    f.update_layout(polar=dict(bgcolor="rgba(10,45,110,.55)", radialaxis=dict(range=[0, 10], gridcolor="#2a5aa8"),
+                               angularaxis=dict(gridcolor="#2a5aa8")))
     return _style(f, "Nitel karşılaştırma (öznel, 1–10)", 460)
 
 
@@ -172,3 +172,21 @@ def fig_tipover(angles: dict, slip_deg: float, slope_deg: float) -> go.Figure:
     f.add_hline(y=slope_deg, line_dash="dash", line_color=RED, annotation_text="yamaç eğimi")
     f.update_yaxes(title="Eşik açı (°)", rangemode="tozero")
     return _style(f, "Statik eşik açılar", 380)
+
+
+# ---- Rover direksiyon şeması -------------------------------------------------------
+def fig_rover_steering(angles, track: float, df: float, dr: float, radius: float) -> go.Figure:
+    pos = [(-track / 2, df), (track / 2, df), (-track / 2, 0), (track / 2, 0), (-track / 2, -dr), (track / 2, -dr)]
+    f = go.Figure()
+    f.add_trace(go.Scatter(x=[-track / 2, track / 2, track / 2, -track / 2, -track / 2],
+                           y=[df, df, -dr, -dr, df], mode="lines", name="Gövde çerçevesi", line=dict(color="#e8f3ff", width=2, dash="dot")))
+    for i, ((x, y), a) in enumerate(zip(pos, angles)):
+        s, c = np.sin(np.radians(a)), np.cos(np.radians(a))
+        L = 0.17 * max(track, df + dr)
+        f.add_trace(go.Scatter(x=[x - s * L, x + s * L], y=[y - c * L, y + c * L], mode="lines", showlegend=False,
+                               line=dict(color=AMB if a != 0 else CYAN, width=9)))
+    if np.isfinite(radius):
+        f.add_trace(go.Scatter(x=[-radius], y=[0], mode="markers", name="Dönüş merkezi (ICC)",
+                               marker=dict(color=RED, size=13, symbol="x")))
+    f.update_xaxes(title="x (cm)"); f.update_yaxes(title="y (cm)")
+    return _style(f, "Tekerlek yönleri (üstten görünüş)", 420, equal=True)
